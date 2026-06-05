@@ -1,0 +1,7 @@
+{
+  "name": "trabalho-renato",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular-standalone"
+}
