@@ -5,7 +5,7 @@ import { WalletService } from '../services/wallet.service';
 export const authGuard: CanActivateFn = () => {
   const wallet = inject(WalletService);
   const router = inject(Router);
-  if (wallet.getSession()) return true;
+  if (wallet.isLoggedIn()) return true;
   router.navigate(['/login']);
   return false;
 };

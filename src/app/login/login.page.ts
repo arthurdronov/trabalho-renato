@@ -9,10 +9,7 @@ import {
   IonText, IonSpinner, ToastController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import {
-  fingerPrintOutline, logInOutline, personAddOutline,
-  alertCircleOutline, lockClosedOutline
-} from 'ionicons/icons';
+import { fingerPrintOutline, personAddOutline, alertCircleOutline } from 'ionicons/icons';
 import { WalletService } from '../services/wallet.service';
 import { WebauthnService } from '../services/webauthn.service';
 
@@ -40,12 +37,11 @@ export class LoginPage {
     private router: Router,
     private toastCtrl: ToastController
   ) {
-    addIcons({ fingerPrintOutline, logInOutline, personAddOutline, alertCircleOutline, lockClosedOutline });
+    addIcons({ fingerPrintOutline, personAddOutline, alertCircleOutline });
   }
 
   async ionViewWillEnter() {
-    // Se já há sessão válida vai direto para home
-    if (this.wallet.getSession()) {
+    if (this.wallet.isLoggedIn()) {
       this.router.navigate(['/tabs/tab1'], { replaceUrl: true });
       return;
     }
@@ -56,17 +52,22 @@ export class LoginPage {
     const email = this.email.trim().toLowerCase();
     if (!email) { await this.toast('Informe seu e-mail.', 'warning'); return; }
 
-    const user = this.wallet.getUser(email);
-    if (!user) { await this.toast('Conta não encontrada. Crie uma conta primeiro.', 'danger'); return; }
-    if (!user.credId) { await this.toast('Nenhuma biometria cadastrada para esta conta.', 'danger'); return; }
-
     this.loading = true;
     try {
-      await this.webauthn.authenticate(user.credId);
-      this.wallet.saveSession(email);
+      // 1. Pede o challenge ao servidor
+      const options = await this.wallet.getLoginChallenge(email);
+
+      // 2. Aciona a biometria do dispositivo
+      const credential = await this.webauthn.authenticate(options);
+
+      // 3. Envia a resposta ao servidor para verificar
+      const { token, user } = await this.wallet.verifyLogin(email, credential);
+
+      this.wallet.saveToken(token);
+      this.wallet.cacheUser(user);
       this.router.navigate(['/tabs/tab1'], { replaceUrl: true });
     } catch (err: any) {
-      await this.toast(this.webauthn.handleError(err), 'danger');
+      await this.toast(this.webauthn.handleError(err) || err.message, 'danger');
     } finally {
       this.loading = false;
     }

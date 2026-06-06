@@ -10,10 +10,7 @@ import {
   ToastController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import {
-  walletOutline, sendOutline, fingerPrintOutline,
-  personOutline, logOutOutline, copyOutline
-} from 'ionicons/icons';
+import { walletOutline, sendOutline, fingerPrintOutline, logOutOutline, copyOutline } from 'ionicons/icons';
 import { WalletService, User } from '../services/wallet.service';
 import { WebauthnService } from '../services/webauthn.service';
 
@@ -31,15 +28,13 @@ import { WebauthnService } from '../services/webauthn.service';
   ]
 })
 export class Tab1Page {
-
   user: User | null = null;
   contacts: User[] = [];
-
-  // Formulário de transferência
-  toEmail = '';
+  toEmail  = '';
   amount: number | null = null;
-  note = '';
-  sending = false;
+  note     = '';
+  sending  = false;
+  loadingData = false;
 
   constructor(
     private wallet: WalletService,
@@ -47,20 +42,29 @@ export class Tab1Page {
     private router: Router,
     private toastCtrl: ToastController
   ) {
-    addIcons({ walletOutline, sendOutline, fingerPrintOutline, personOutline, logOutOutline, copyOutline });
+    addIcons({ walletOutline, sendOutline, fingerPrintOutline, logOutOutline, copyOutline });
   }
 
-  ionViewWillEnter() {
-    this.loadUser();
+  async ionViewWillEnter() {
+    if (!this.wallet.isLoggedIn()) { this.logout(); return; }
+    this.user = this.wallet.getCachedUser();
+    await this.loadData();
   }
 
-  loadUser() {
-    this.user = this.wallet.getCurrentUser();
-    if (!this.user) { this.logout(); return; }
-
-    const session = this.wallet.getSession();
-    const all = this.wallet.getUsers();
-    this.contacts = Object.values(all).filter(u => u.email !== session?.email);
+  async loadData() {
+    this.loadingData = true;
+    try {
+      const [user, contacts] = await Promise.all([
+        this.wallet.fetchMe(),
+        this.wallet.fetchContacts()
+      ]);
+      this.user     = user;
+      this.contacts = contacts;
+    } catch (err: any) {
+      await this.toast(err.message, 'danger');
+    } finally {
+      this.loadingData = false;
+    }
   }
 
   get fmtBalance(): string {
@@ -68,33 +72,35 @@ export class Tab1Page {
   }
 
   async send() {
-    if (!this.toEmail) { await this.toast('Selecione o destinatário.', 'warning'); return; }
+    if (!this.toEmail)                 { await this.toast('Selecione o destinatário.', 'warning'); return; }
     if (!this.amount || this.amount <= 0) { await this.toast('Informe um valor válido.', 'warning'); return; }
-    if (!this.user) return;
-
+    if (!this.user)                    return;
     if (this.amount > this.user.balance) { await this.toast('Saldo insuficiente.', 'danger'); return; }
 
     this.sending = true;
     try {
-      await this.webauthn.authenticate(this.user.credId);
-    } catch (err: any) {
-      await this.toast(this.webauthn.handleError(err), 'danger');
-      this.sending = false;
-      return;
-    }
+      // 1. Autentica com biometria ANTES de enviar
+      const options    = await this.wallet.getLoginChallenge(this.user.email);
+      const credential = await this.webauthn.authenticate(options);
+      const { token }  = await this.wallet.verifyLogin(this.user.email, credential);
+      this.wallet.saveToken(token); // renova o token
 
-    try {
-      const tx = this.wallet.transfer(this.user.email, this.toEmail, this.amount, this.note);
-      this.loadUser(); // atualiza saldo
+      // 2. Executa a transferência
+      const { transaction: tx, newBalance } = await this.wallet.transfer(
+        this.toEmail, this.amount, this.note
+      );
+      this.user.balance = newBalance;
+      this.wallet.cacheUser(this.user);
+
       this.toEmail = '';
-      this.amount = null;
-      this.note = '';
+      this.amount  = null;
+      this.note    = '';
       await this.toast(
-        `✅ Transferência de ${this.wallet.fmtBRL(tx.amount)} realizada! Hash: ${tx.hash.slice(0, 14)}…`,
+        `✅ ${this.wallet.fmtBRL(tx.amount)} enviado! Hash: ${tx.hash.slice(0, 14)}…`,
         'success'
       );
     } catch (err: any) {
-      await this.toast(err.message, 'danger');
+      await this.toast(this.webauthn.handleError(err) || err.message, 'danger');
     } finally {
       this.sending = false;
     }
@@ -102,13 +108,12 @@ export class Tab1Page {
 
   copyAddress() {
     if (!this.user) return;
-    navigator.clipboard.writeText(this.user.address).then(() =>
-      this.toast('Endereço copiado!', 'medium')
-    );
+    navigator.clipboard.writeText(this.user.address)
+      .then(() => this.toast('Endereço copiado!', 'medium'));
   }
 
   logout() {
-    this.wallet.clearSession();
+    this.wallet.clearToken();
     this.router.navigate(['/login'], { replaceUrl: true });
   }
 

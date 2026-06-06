@@ -1,142 +1,137 @@
 import { Injectable } from '@angular/core';
 
 export interface User {
+  id: number;
   name: string;
   email: string;
-  credId: string;
   address: string;
   balance: number;
-  txs: Transaction[];
 }
 
 export interface Transaction {
+  id: number;
   type: 'out' | 'in';
-  toEmail?: string;
-  toName?: string;
-  toAddress?: string;
-  fromEmail?: string;
-  fromName?: string;
-  fromAddress?: string;
+  hash: string;
   amount: number;
   note: string;
-  hash: string;
-  ts: number;
   block: number;
   gasUsed: string;
   confirmations: number;
+  ts: number;
+  toName?: string;
+  toEmail?: string;
+  toAddress?: string;
+  fromName?: string;
+  fromEmail?: string;
+  fromAddress?: string;
 }
+
+const API = '/api';
 
 @Injectable({ providedIn: 'root' })
 export class WalletService {
 
-  private readonly USERS_KEY = 'cw_users';
-  private readonly SESSION_KEY = 'cw_session';
+  private readonly TOKEN_KEY   = 'cw_token';
+  private readonly USER_KEY    = 'cw_user';
 
-  // ─── Usuários ────────────────────────────────────────────────────────────────
+  // ─── HTTP helpers ─────────────────────────────────────────────────────────
 
-  getUsers(): Record<string, User> {
-    try { return JSON.parse(localStorage.getItem(this.USERS_KEY) || '{}'); }
-    catch { return {}; }
+  getToken(): string | null {
+    return localStorage.getItem(this.TOKEN_KEY);
   }
 
-  saveUsers(users: Record<string, User>): void {
-    localStorage.setItem(this.USERS_KEY, JSON.stringify(users));
+  saveToken(token: string): void {
+    localStorage.setItem(this.TOKEN_KEY, token);
   }
 
-  getUser(email: string): User | null {
-    return this.getUsers()[email] ?? null;
+  clearToken(): void {
+    localStorage.removeItem(this.TOKEN_KEY);
+    localStorage.removeItem(this.USER_KEY);
   }
 
-  /** Cria novo usuário com saldo inicial de R$ 5.000 */
-  createUser(name: string, email: string, credId: string): User {
-    const users = this.getUsers();
-    const user: User = {
-      name, email, credId,
-      address: this.genAddress(),
-      balance: 5000,
-      txs: []
-    };
-    // cria um contato demo na primeira conta para facilitar testes
-    if (Object.keys(users).length === 0) {
-      users['demo@chainwallet.io'] = {
-        name: 'Demo Friend', email: 'demo@chainwallet.io',
-        credId: '', address: this.genAddress(), balance: 2000, txs: []
-      };
+  isLoggedIn(): boolean {
+    return !!this.getToken();
+  }
+
+  getCachedUser(): User | null {
+    try {
+      return JSON.parse(localStorage.getItem(this.USER_KEY) || 'null');
+    } catch { return null; }
+  }
+
+  cacheUser(user: User): void {
+    localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+  }
+
+  private headers(auth = false): HeadersInit {
+    const h: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (auth) {
+      const token = this.getToken();
+      if (token) h['Authorization'] = `Bearer ${token}`;
     }
-    users[email] = user;
-    this.saveUsers(users);
+    return h;
+  }
+
+  private async request<T>(method: string, path: string, body?: any, auth = false): Promise<T> {
+    const res = await fetch(`${API}${path}`, {
+      method,
+      headers: this.headers(auth),
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
+    return data as T;
+  }
+
+  // ─── Auth endpoints ───────────────────────────────────────────────────────
+
+  async getRegisterChallenge(name: string, email: string) {
+    return this.request<any>('POST', '/auth/register/challenge', { name, email });
+  }
+
+  async verifyRegistration(name: string, email: string, credential: any) {
+    return this.request<{ token: string; user: User }>(
+      'POST', '/auth/register/verify', { name, email, credential }
+    );
+  }
+
+  async getLoginChallenge(email: string) {
+    return this.request<any>('POST', '/auth/login/challenge', { email });
+  }
+
+  async verifyLogin(email: string, credential: any) {
+    return this.request<{ token: string; user: User }>(
+      'POST', '/auth/login/verify', { email, credential }
+    );
+  }
+
+  // ─── Wallet endpoints ─────────────────────────────────────────────────────
+
+  async fetchMe(): Promise<User> {
+    const user = await this.request<User>('GET', '/wallet/me', undefined, true);
+    this.cacheUser(user);
     return user;
   }
 
-  updateCredId(email: string, credId: string): void {
-    const users = this.getUsers();
-    if (users[email]) { users[email].credId = credId; this.saveUsers(users); }
+  async fetchContacts(): Promise<User[]> {
+    return this.request<User[]>('GET', '/wallet/contacts', undefined, true);
   }
 
-  /** Executa transferência entre dois usuários, persiste e retorna a tx */
-  transfer(fromEmail: string, toEmail: string, amount: number, note: string): Transaction {
-    const users = this.getUsers();
-    const from = users[fromEmail];
-    const to = users[toEmail];
-
-    if (!from || !to) throw new Error('Usuário não encontrado.');
-    if (amount <= 0) throw new Error('Valor inválido.');
-    if (amount > from.balance) throw new Error('Saldo insuficiente.');
-
-    const hash = this.genHash();
-    const ts = Date.now();
-    const block = Math.floor(Math.random() * 900000) + 100000;
-    const gasUsed = (Math.random() * 0.002 + 0.0001).toFixed(6);
-
-    const txOut: Transaction = {
-      type: 'out', toEmail, toName: to.name, toAddress: to.address,
-      fromAddress: from.address, amount, note, hash, ts, block, gasUsed, confirmations: 12
-    };
-    const txIn: Transaction = {
-      type: 'in', fromEmail, fromName: from.name, fromAddress: from.address,
-      toAddress: to.address, amount, note, hash, ts, block, gasUsed, confirmations: 12
-    };
-
-    from.balance -= amount;
-    to.balance += amount;
-    from.txs.push(txOut);
-    to.txs.push(txIn);
-    this.saveUsers(users);
-
-    return txOut;
+  async transfer(toEmail: string, amount: number, note: string) {
+    return this.request<{ transaction: Transaction; newBalance: number }>(
+      'POST', '/wallet/transfer', { toEmail, amount, note }, true
+    );
   }
 
-  // ─── Sessão ───────────────────────────────────────────────────────────────────
-
-  getSession(): { email: string } | null {
-    try { return JSON.parse(localStorage.getItem(this.SESSION_KEY) || 'null'); }
-    catch { return null; }
+  async fetchTransactions(): Promise<Transaction[]> {
+    return this.request<Transaction[]>('GET', '/wallet/transactions', undefined, true);
   }
 
-  saveSession(email: string): void {
-    localStorage.setItem(this.SESSION_KEY, JSON.stringify({ email }));
+  async fetchTransaction(id: number): Promise<Transaction> {
+    return this.request<Transaction>('GET', `/wallet/transaction/${id}`, undefined, true);
   }
 
-  clearSession(): void {
-    localStorage.removeItem(this.SESSION_KEY);
-  }
-
-  getCurrentUser(): User | null {
-    const session = this.getSession();
-    return session ? this.getUser(session.email) : null;
-  }
-
-  // ─── Utilidades ───────────────────────────────────────────────────────────────
-
-  genAddress(): string {
-    const h = '0123456789abcdef';
-    return '0x' + Array.from({ length: 40 }, () => h[Math.floor(Math.random() * 16)]).join('');
-  }
-
-  genHash(): string {
-    const h = '0123456789abcdef';
-    return '0x' + Array.from({ length: 64 }, () => h[Math.floor(Math.random() * 16)]).join('');
-  }
+  // ─── Formatação ───────────────────────────────────────────────────────────
 
   fmtBRL(value: number): string {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -146,10 +141,5 @@ export class WalletService {
     const d = new Date(ts);
     return d.toLocaleDateString('pt-BR') + ' ' +
       d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  }
-
-  initials(name: string): string {
-    const p = name.trim().split(' ');
-    return (p[0][0] + (p[1] ? p[1][0] : '')).toUpperCase();
   }
 }

@@ -13,16 +13,18 @@
     <ion-refresher-content></ion-refresher-content>
   </ion-refresher>
 
-  <!-- Lista vazia -->
-  <div *ngIf="txs.length === 0" class="empty-state ion-text-center ion-padding">
+  <div *ngIf="loading" class="ion-text-center ion-padding">
+    <ion-spinner name="crescent"></ion-spinner>
+  </div>
+
+  <div *ngIf="!loading && txs.length === 0" class="empty-state ion-text-center ion-padding">
     <div style="font-size: 48px; margin-bottom: 12px;">📭</div>
     <ion-text color="medium">
       <p>Nenhuma transação ainda.<br>Faça sua primeira transferência!</p>
     </ion-text>
   </div>
 
-  <!-- Lista de transações -->
-  <ion-list *ngIf="txs.length > 0" lines="full">
+  <ion-list *ngIf="!loading && txs.length > 0" lines="full">
     <ion-item
       *ngFor="let tx of txs"
       (click)="goDetail(tx)"
@@ -30,9 +32,7 @@
       detail>
 
       <div slot="start" class="tx-icon" [class.out]="tx.type === 'out'" [class.in]="tx.type === 'in'">
-        <ion-icon
-          [name]="tx.type === 'out' ? 'arrow-up-outline' : 'arrow-down-outline'">
-        </ion-icon>
+        <ion-icon [name]="tx.type === 'out' ? 'arrow-up-outline' : 'arrow-down-outline'"></ion-icon>
       </div>
 
       <ion-label>

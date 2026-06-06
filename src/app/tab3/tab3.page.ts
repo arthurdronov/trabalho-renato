@@ -28,10 +28,10 @@ import { WebauthnService } from '../services/webauthn.service';
   ]
 })
 export class Tab3Page {
-
   tx: Transaction | null = null;
   hashRevealed = false;
-  loading = false;
+  loading      = false;
+  loadingTx    = false;
 
   constructor(
     private wallet: WalletService,
@@ -43,38 +43,45 @@ export class Tab3Page {
     addIcons({ lockClosedOutline, lockOpenOutline, fingerPrintOutline, shieldCheckmarkOutline, copyOutline, receiptOutline });
   }
 
-  ionViewWillEnter() {
+  async ionViewWillEnter() {
     this.hashRevealed = false;
-    const idx = Number(this.route.snapshot.queryParamMap.get('idx') ?? -1);
-    const user = this.wallet.getCurrentUser();
-    if (!user || idx < 0 || idx >= user.txs.length) {
+    this.tx = null;
+
+    const id = Number(this.route.snapshot.queryParamMap.get('id') ?? 0);
+    if (!id) { this.router.navigate(['/tabs/tab2'], { replaceUrl: true }); return; }
+
+    this.loadingTx = true;
+    try {
+      this.tx = await this.wallet.fetchTransaction(id);
+    } catch (err: any) {
+      await this.toast(err.message, 'danger');
       this.router.navigate(['/tabs/tab2'], { replaceUrl: true });
-      return;
+    } finally {
+      this.loadingTx = false;
     }
-    this.tx = user.txs[idx];
   }
 
-  get isOut(): boolean { return this.tx?.type === 'out'; }
-  get partnerName(): string {
-    return this.tx ? (this.isOut ? this.tx.toName! : this.tx.fromName!) : '';
-  }
-  get partnerAddress(): string {
-    return this.tx ? (this.isOut ? this.tx.toAddress! : this.tx.fromAddress!) : '';
-  }
-  fmtBRL(v: number) { return this.wallet.fmtBRL(v); }
-  fmtDate(ts: number) { return this.wallet.fmtDate(ts); }
+  get isOut(): boolean  { return this.tx?.type === 'out'; }
+  get partnerName(): string  { return this.tx ? (this.isOut ? this.tx.toName! : this.tx.fromName!) : ''; }
+  get partnerAddress(): string { return this.tx ? (this.isOut ? this.tx.toAddress! : this.tx.fromAddress!) : ''; }
+  fmtBRL(v: number)    { return this.wallet.fmtBRL(v); }
+  fmtDate(ts: number)  { return this.wallet.fmtDate(ts); }
 
   async revealHash() {
-    const user = this.wallet.getCurrentUser();
-    if (!user?.credId) return;
+    const user = this.wallet.getCachedUser();
+    if (!user) return;
 
     this.loading = true;
     try {
-      await this.webauthn.authenticate(user.credId);
+      // Requer autenticação biométrica para revelar o hash
+      const options    = await this.wallet.getLoginChallenge(user.email);
+      const credential = await this.webauthn.authenticate(options);
+      await this.wallet.verifyLogin(user.email, credential);
+
       this.hashRevealed = true;
       await this.toast('Hash revelado com sucesso!', 'success');
     } catch (err: any) {
-      await this.toast(this.webauthn.handleError(err), 'danger');
+      await this.toast(this.webauthn.handleError(err) || err.message, 'danger');
     } finally {
       this.loading = false;
     }
@@ -82,9 +89,8 @@ export class Tab3Page {
 
   copyHash() {
     if (!this.tx) return;
-    navigator.clipboard.writeText(this.tx.hash).then(() =>
-      this.toast('Hash copiado!', 'medium')
-    );
+    navigator.clipboard.writeText(this.tx.hash)
+      .then(() => this.toast('Hash copiado!', 'medium'));
   }
 
   private async toast(message: string, color: string) {

@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import {
   IonHeader, IonToolbar, IonTitle, IonContent,
   IonList, IonItem, IonLabel, IonIcon,
-  IonText, IonNote, IonRefresher, IonRefresherContent
+  IonText, IonNote, IonRefresher, IonRefresherContent, IonSpinner
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { arrowUpOutline, arrowDownOutline, receiptOutline } from 'ionicons/icons';
@@ -19,29 +19,35 @@ import { WalletService, Transaction } from '../services/wallet.service';
     CommonModule,
     IonHeader, IonToolbar, IonTitle, IonContent,
     IonList, IonItem, IonLabel, IonIcon,
-    IonText, IonNote, IonRefresher, IonRefresherContent
+    IonText, IonNote, IonRefresher, IonRefresherContent, IonSpinner
   ]
 })
 export class Tab2Page {
-
   txs: Transaction[] = [];
+  loading = false;
 
   constructor(private wallet: WalletService, private router: Router) {
     addIcons({ arrowUpOutline, arrowDownOutline, receiptOutline });
   }
 
-  ionViewWillEnter() {
-    this.load();
+  async ionViewWillEnter() {
+    await this.load();
   }
 
-  load() {
-    const user = this.wallet.getCurrentUser();
-    if (!user) { this.router.navigate(['/login'], { replaceUrl: true }); return; }
-    this.txs = [...(user.txs || [])].reverse();
+  async load() {
+    if (!this.wallet.isLoggedIn()) { this.router.navigate(['/login'], { replaceUrl: true }); return; }
+    this.loading = true;
+    try {
+      this.txs = await this.wallet.fetchTransactions();
+    } catch (err: any) {
+      console.error(err);
+    } finally {
+      this.loading = false;
+    }
   }
 
-  refresh(event: any) {
-    this.load();
+  async refresh(event: any) {
+    await this.load();
     event.target.complete();
   }
 
@@ -49,13 +55,10 @@ export class Tab2Page {
     return tx.type === 'out' ? (tx.toName ?? '') : (tx.fromName ?? '');
   }
 
-  fmtBRL(v: number) { return this.wallet.fmtBRL(v); }
+  fmtBRL(v: number)  { return this.wallet.fmtBRL(v); }
   fmtDate(ts: number) { return this.wallet.fmtDate(ts); }
 
   goDetail(tx: Transaction) {
-    // Passa o índice original (txs está invertido) para a aba de detalhe
-    const user = this.wallet.getCurrentUser()!;
-    const idx = user.txs.findIndex(t => t.hash === tx.hash && t.ts === tx.ts);
-    this.router.navigate(['/tabs/tab3'], { queryParams: { idx } });
+    this.router.navigate(['/tabs/tab3'], { queryParams: { id: tx.id } });
   }
 }

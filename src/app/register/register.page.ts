@@ -10,7 +10,7 @@ import {
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
-  personOutline, fingerPrintOutline, checkmarkCircleOutline,
+  fingerPrintOutline, checkmarkCircleOutline,
   alertCircleOutline, arrowForwardOutline
 } from 'ionicons/icons';
 import { WalletService } from '../services/wallet.service';
@@ -30,15 +30,11 @@ import { WebauthnService } from '../services/webauthn.service';
   ]
 })
 export class RegisterPage {
-
-  // Passo 1
-  name = '';
+  name  = '';
   email = '';
-
-  // Estado
-  step = 1;           // 1 = dados, 2 = biometria
-  loading = false;
-  bioDone = false;
+  step  = 1;
+  loading   = false;
+  bioDone   = false;
   biometricAvailable = false;
 
   constructor(
@@ -47,49 +43,48 @@ export class RegisterPage {
     private router: Router,
     private toastCtrl: ToastController
   ) {
-    addIcons({ personOutline, fingerPrintOutline, checkmarkCircleOutline, alertCircleOutline, arrowForwardOutline });
+    addIcons({ fingerPrintOutline, checkmarkCircleOutline, alertCircleOutline, arrowForwardOutline });
   }
 
   async ionViewWillEnter() {
     this.biometricAvailable = await this.webauthn.isBiometricAvailable();
   }
 
-  // ─── Passo 1 → 2 ─────────────────────────────────────────────────────────────
-
   advanceStep() {
-    const name = this.name.trim();
+    const name  = this.name.trim();
     const email = this.email.trim().toLowerCase();
     if (!name || name.length < 2) { this.toast('Informe seu nome completo.', 'warning'); return; }
-    if (!email || !email.includes('@')) { this.toast('Informe um e-mail válido.', 'warning'); return; }
-
-    const existing = this.wallet.getUser(email);
-    if (existing) { this.toast('Este e-mail já está cadastrado. Faça login.', 'danger'); return; }
-
+    if (!email.includes('@'))     { this.toast('Informe um e-mail válido.', 'warning'); return; }
     this.step = 2;
   }
 
-  // ─── Passo 2: registro biométrico ────────────────────────────────────────────
-
   async registerBiometric() {
+    const name  = this.name.trim();
+    const email = this.email.trim().toLowerCase();
+
     this.loading = true;
     try {
-      const credId = await this.webauthn.register(this.name.trim(), this.email.trim().toLowerCase());
-      // Cria o usuário com o credId retornado pelo WebAuthn
-      this.wallet.createUser(this.name.trim(), this.email.trim().toLowerCase(), credId);
+      // 1. Pede as opções de registro ao servidor
+      const options = await this.wallet.getRegisterChallenge(name, email);
+
+      // 2. Aciona a biometria do dispositivo
+      const credential = await this.webauthn.register(options);
+
+      // 3. Envia a resposta ao servidor para criar a conta
+      const { token, user } = await this.wallet.verifyRegistration(name, email, credential);
+
+      this.wallet.saveToken(token);
+      this.wallet.cacheUser(user);
       this.bioDone = true;
-      await this.toast('Biometria registrada com sucesso!', 'success');
+      await this.toast('Conta criada com sucesso!', 'success');
     } catch (err: any) {
-      await this.toast(this.webauthn.handleError(err), 'danger');
+      await this.toast(this.webauthn.handleError(err) || err.message, 'danger');
     } finally {
       this.loading = false;
     }
   }
 
-  // ─── Finalizar ────────────────────────────────────────────────────────────────
-
   finish() {
-    const email = this.email.trim().toLowerCase();
-    this.wallet.saveSession(email);
     this.router.navigate(['/tabs/tab1'], { replaceUrl: true });
   }
 
