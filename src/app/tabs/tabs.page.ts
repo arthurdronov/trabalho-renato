@@ -12,6 +12,6 @@ import { walletOutline, listOutline, receiptOutline } from 'ionicons/icons';
 export class TabsPage {
   public environmentInjector = inject(EnvironmentInjector);
   constructor() {
-    addIcons({ walletOutline, listOutline, receiptOutline });
+    addIcons({ walletOutline, listOutline });
   }
 }
