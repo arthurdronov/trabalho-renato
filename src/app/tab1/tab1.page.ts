@@ -5,9 +5,9 @@ import { FormsModule } from '@angular/forms';
 import {
   IonHeader, IonToolbar, IonTitle, IonContent,
   IonCard, IonCardHeader, IonCardTitle, IonCardContent,
-  IonButton, IonIcon, IonItem, IonLabel, IonInput,
+  IonButton, IonButtons, IonIcon, IonItem, IonLabel, IonInput,
   IonSelect, IonSelectOption, IonText, IonSpinner,
-  IonBadge, ToastController
+  ToastController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
@@ -26,9 +26,8 @@ import { WebauthnService } from '../services/webauthn.service';
     CommonModule, FormsModule,
     IonHeader, IonToolbar, IonTitle, IonContent,
     IonCard, IonCardHeader, IonCardTitle, IonCardContent,
-    IonButton, IonIcon, IonItem, IonLabel, IonInput,
-    IonSelect, IonSelectOption, IonText, IonSpinner,
-    IonBadge
+    IonButton, IonButtons, IonIcon, IonItem, IonLabel, IonInput,
+    IonSelect, IonSelectOption, IonText, IonSpinner
   ]
 })
 export class Tab1Page {

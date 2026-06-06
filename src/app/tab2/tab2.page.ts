@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import {
   IonHeader, IonToolbar, IonTitle, IonContent,
-  IonList, IonItem, IonLabel, IonIcon, IonBadge,
+  IonList, IonItem, IonLabel, IonIcon,
   IonText, IonNote, IonRefresher, IonRefresherContent
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
@@ -18,7 +18,7 @@ import { WalletService, Transaction } from '../services/wallet.service';
   imports: [
     CommonModule,
     IonHeader, IonToolbar, IonTitle, IonContent,
-    IonList, IonItem, IonLabel, IonIcon, IonBadge,
+    IonList, IonItem, IonLabel, IonIcon,
     IonText, IonNote, IonRefresher, IonRefresherContent
   ]
 })
