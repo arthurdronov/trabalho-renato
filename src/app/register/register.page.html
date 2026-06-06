@@ -1,0 +1,111 @@
+<ion-header [translucent]="true">
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/login"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Criar conta</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+
+  <ion-progress-bar [value]="step === 1 ? 0.5 : 1" color="success" class="ion-margin-bottom"></ion-progress-bar>
+
+  <!-- ── PASSO 1: Dados da conta ───────────────────────────────────────────── -->
+  <div *ngIf="step === 1">
+    <ion-card>
+      <ion-card-header>
+        <div class="step-header ion-text-center">
+          <div class="step-icon">👤</div>
+          <ion-card-title>Passo 1 — Seus dados</ion-card-title>
+        </div>
+      </ion-card-header>
+      <ion-card-content>
+
+        <ion-item lines="full" class="ion-margin-bottom">
+          <ion-label position="stacked">Nome completo</ion-label>
+          <ion-input
+            type="text"
+            placeholder="Ex: Ana Souza"
+            [(ngModel)]="name">
+          </ion-input>
+        </ion-item>
+
+        <ion-item lines="full" class="ion-margin-bottom">
+          <ion-label position="stacked">E-mail</ion-label>
+          <ion-input
+            type="email"
+            placeholder="ana@exemplo.com"
+            [(ngModel)]="email">
+          </ion-input>
+        </ion-item>
+
+        <ion-button expand="block" (click)="advanceStep()" class="ion-margin-top">
+          <ion-icon name="arrow-forward-outline" slot="end"></ion-icon>
+          Próximo passo
+        </ion-button>
+
+      </ion-card-content>
+    </ion-card>
+  </div>
+
+  <!-- ── PASSO 2: Biometria ────────────────────────────────────────────────── -->
+  <div *ngIf="step === 2">
+    <ion-card>
+      <ion-card-header>
+        <div class="step-header ion-text-center">
+          <div class="step-icon">🪪</div>
+          <ion-card-title>Passo 2 — Biometria</ion-card-title>
+        </div>
+      </ion-card-header>
+      <ion-card-content>
+
+        <!-- Aviso sem biometria -->
+        <div *ngIf="!biometricAvailable" class="ion-margin-bottom">
+          <ion-text color="warning">
+            <p>
+              <ion-icon name="alert-circle-outline"></ion-icon>
+              Nenhuma biometria detectada. Configure Face ID, impressão digital
+              ou câmera facial nas configurações do sistema para continuar.
+            </p>
+          </ion-text>
+        </div>
+
+        <p class="info-text">
+          Sua biometria protege o acesso à conta e a visualização dos hashes das
+          transações. O sistema usa <strong>WebAuthn</strong> — a biometria nunca
+          sai do seu dispositivo.
+        </p>
+
+        <!-- Biometria ainda não registrada -->
+        <ng-container *ngIf="!bioDone">
+          <ion-button
+            expand="block"
+            (click)="registerBiometric()"
+            [disabled]="loading || !biometricAvailable"
+            class="ion-margin-top">
+            <ion-spinner *ngIf="loading" name="crescent" slot="start"></ion-spinner>
+            <ion-icon *ngIf="!loading" name="finger-print-outline" slot="start"></ion-icon>
+            {{ loading ? 'Registrando…' : 'Registrar biometria' }}
+          </ion-button>
+        </ng-container>
+
+        <!-- Biometria registrada com sucesso -->
+        <ng-container *ngIf="bioDone">
+          <ion-text color="success">
+            <p class="ion-text-center ion-margin-top">
+              <ion-icon name="checkmark-circle-outline" style="font-size: 24px; vertical-align: middle;"></ion-icon>
+              Biometria registrada!
+            </p>
+          </ion-text>
+          <ion-button expand="block" color="success" (click)="finish()" class="ion-margin-top">
+            <ion-icon name="checkmark-circle-outline" slot="start"></ion-icon>
+            Acessar minha carteira
+          </ion-button>
+        </ng-container>
+
+      </ion-card-content>
+    </ion-card>
+  </div>
+
+</ion-content>

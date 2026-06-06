@@ -1,0 +1,65 @@
+<ion-header [translucent]="true">
+  <ion-toolbar color="primary">
+    <ion-title>ChainWallet</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding login-content">
+
+  <div class="hero ion-text-center">
+    <div class="hero-icon">🔐</div>
+    <h1>ChainWallet</h1>
+    <p>Carteira blockchain com autenticação biométrica</p>
+  </div>
+
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Entrar na conta</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+
+      <div *ngIf="!biometricAvailable" class="ion-margin-bottom">
+        <ion-text color="warning">
+          <p>
+            <ion-icon name="alert-circle-outline"></ion-icon>
+            Nenhuma biometria detectada neste dispositivo. Configure Face ID,
+            impressão digital ou câmera facial antes de continuar.
+          </p>
+        </ion-text>
+      </div>
+
+      <ion-item lines="full" class="ion-margin-bottom">
+        <ion-label position="stacked">E-mail</ion-label>
+        <ion-input
+          type="email"
+          placeholder="seu@email.com"
+          [(ngModel)]="email"
+          (keyup.enter)="login()"
+          [disabled]="loading">
+        </ion-input>
+      </ion-item>
+
+      <ion-button
+        expand="block"
+        (click)="login()"
+        [disabled]="loading || !biometricAvailable"
+        class="ion-margin-top">
+        <ion-spinner *ngIf="loading" name="crescent" slot="start"></ion-spinner>
+        <ion-icon *ngIf="!loading" name="finger-print-outline" slot="start"></ion-icon>
+        {{ loading ? 'Verificando biometria…' : 'Entrar com biometria' }}
+      </ion-button>
+
+      <ion-button
+        expand="block"
+        fill="outline"
+        (click)="goRegister()"
+        class="ion-margin-top"
+        [disabled]="loading">
+        <ion-icon name="person-add-outline" slot="start"></ion-icon>
+        Criar nova conta
+      </ion-button>
+
+    </ion-card-content>
+  </ion-card>
+
+</ion-content>

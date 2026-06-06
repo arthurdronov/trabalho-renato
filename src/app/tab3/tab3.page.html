@@ -1,17 +1,111 @@
 <ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>
-      Tab 3
-    </ion-title>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/tab2"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Detalhes</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Tab 3</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content [fullscreen]="true" class="ion-padding" *ngIf="tx">
 
-  <app-explore-container name="Tab 3 page"></app-explore-container>
+  <!-- Cabeçalho da transação -->
+  <ion-card>
+    <ion-card-content class="ion-text-center summary-card">
+      <div class="tx-emoji">{{ isOut ? '📤' : '📥' }}</div>
+      <div class="tx-value" [class.out]="isOut" [class.in]="!isOut">
+        {{ isOut ? '-' : '+' }}{{ fmtBRL(tx.amount) }}
+      </div>
+      <p class="tx-partner">
+        {{ isOut ? 'Enviado para' : 'Recebido de' }}
+        <strong>{{ partnerName }}</strong>
+      </p>
+      <p class="tx-date">{{ fmtDate(tx.ts) }}</p>
+      <p *ngIf="tx.note" class="tx-note">{{ tx.note }}</p>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Dados blockchain -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Dados da transação</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+
+      <ion-item lines="full">
+        <ion-label>
+          <p>Bloco</p>
+          <h3 class="mono">#{{ tx.block }}</h3>
+        </ion-label>
+      </ion-item>
+
+      <ion-item lines="full">
+        <ion-label>
+          <p>Confirmações</p>
+          <h3>{{ tx.confirmations }}</h3>
+        </ion-label>
+      </ion-item>
+
+      <ion-item lines="full">
+        <ion-label>
+          <p>Gas utilizado</p>
+          <h3 class="mono">{{ tx.gasUsed }} ETH</h3>
+        </ion-label>
+      </ion-item>
+
+      <ion-item lines="none">
+        <ion-label>
+          <p>{{ isOut ? 'Endereço do destinatário' : 'Endereço do remetente' }}</p>
+          <h3 class="mono addr">{{ partnerAddress }}</h3>
+        </ion-label>
+      </ion-item>
+
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Hash — protegido por biometria -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>
+        <ion-icon
+          [name]="hashRevealed ? 'lock-open-outline' : 'lock-closed-outline'"
+          style="vertical-align:middle; margin-right:6px;">
+        </ion-icon>
+        Hash da transação
+      </ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+
+      <!-- Bloqueado -->
+      <div *ngIf="!hashRevealed" class="hash-locked">
+        <code class="blurred">0x████████████████████████████████████████████████████████████████</code>
+        <ion-button
+          expand="block"
+          (click)="revealHash()"
+          [disabled]="loading"
+          class="ion-margin-top">
+          <ion-spinner *ngIf="loading" name="crescent" slot="start"></ion-spinner>
+          <ion-icon *ngIf="!loading" name="finger-print-outline" slot="start"></ion-icon>
+          {{ loading ? 'Verificando biometria…' : 'Ver hash com biometria' }}
+        </ion-button>
+      </div>
+
+      <!-- Revelado -->
+      <div *ngIf="hashRevealed">
+        <ion-text color="success">
+          <p style="font-size:13px; margin-bottom:8px;">
+            <ion-icon name="shield-checkmark-outline" style="vertical-align:middle;"></ion-icon>
+            Identidade verificada
+          </p>
+        </ion-text>
+        <code class="hash-revealed">{{ tx.hash }}</code>
+        <ion-button fill="outline" expand="block" (click)="copyHash()" class="ion-margin-top">
+          <ion-icon name="copy-outline" slot="start"></ion-icon>
+          Copiar hash
+        </ion-button>
+      </div>
+
+    </ion-card-content>
+  </ion-card>
+
 </ion-content>

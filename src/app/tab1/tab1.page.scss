@@ -1,30 +1,40 @@
-.blurred-box {
-    background: #f4f4f4;
-    padding: 15px;
-    border-radius: 8px;
-    filter: blur(4px);
-    user-select: none;
-    border: 1px dashed #ccc;
-    text-align: center;
-}
+.balance-card {
+  --background: var(--ion-color-primary);
+  color: #fff;
+  border-radius: 16px;
+  margin-bottom: 16px;
 
-.revealed-box {
-    background: #e8f5e9;
-    padding: 15px;
-    border-radius: 8px;
-    border: 1px solid #c8e6c9;
-    word-break: break-all;
-    text-align: center;
-    animation: fadeIn 0.5s ease-in;
-}
+  .balance-label {
+    font-size: 14px;
+    opacity: 0.8;
+    margin-bottom: 4px;
+  }
 
-.hash-container {
-    background: #fafafa;
-    padding: 10px;
-    border-radius: 10px;
-}
+  .balance-amount {
+    font-size: 32px;
+    font-weight: 600;
+    margin: 0 0 10px;
+  }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+  .address-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .address-text {
+    font-size: 11px;
+    font-family: monospace;
+    opacity: 0.6;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+  }
+
+  .copy-btn {
+    --color: rgba(255,255,255,0.7);
+    --padding-start: 4px;
+    --padding-end: 4px;
+  }
 }

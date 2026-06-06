@@ -1,0 +1,43 @@
+.summary-card {
+  padding: 24px 16px;
+
+  .tx-emoji { font-size: 44px; margin-bottom: 8px; }
+
+  .tx-value {
+    font-size: 30px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    &.out { color: var(--ion-color-danger); }
+    &.in  { color: var(--ion-color-success); }
+  }
+
+  .tx-partner { font-size: 14px; color: var(--ion-color-medium); margin: 0 0 4px; }
+  .tx-date    { font-size: 13px; color: var(--ion-color-medium); margin: 0 0 4px; }
+  .tx-note    { font-size: 13px; font-style: italic; color: var(--ion-color-medium); margin: 0; }
+}
+
+.mono { font-family: monospace; font-size: 13px; }
+.addr { word-break: break-all; font-size: 12px; }
+
+.hash-locked .blurred {
+  display: block;
+  font-family: monospace;
+  font-size: 12px;
+  filter: blur(4px);
+  user-select: none;
+  color: var(--ion-color-medium);
+  word-break: break-all;
+  line-height: 1.6;
+}
+
+.hash-revealed {
+  display: block;
+  font-family: monospace;
+  font-size: 12px;
+  word-break: break-all;
+  line-height: 1.6;
+  color: var(--ion-color-dark);
+  background: var(--ion-color-light);
+  padding: 10px 12px;
+  border-radius: 8px;
+}

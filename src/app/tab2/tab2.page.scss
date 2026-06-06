@@ -1,0 +1,33 @@
+.empty-state {
+  padding-top: 80px;
+}
+
+.tx-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  margin-right: 4px;
+
+  &.out {
+    background: rgba(var(--ion-color-danger-rgb), 0.12);
+    color: var(--ion-color-danger);
+  }
+  &.in {
+    background: rgba(var(--ion-color-success-rgb), 0.12);
+    color: var(--ion-color-success);
+  }
+}
+
+.note-text {
+  font-style: italic;
+  color: var(--ion-color-medium);
+}
+
+.tx-amount {
+  font-weight: 600;
+  font-size: 15px;
+}

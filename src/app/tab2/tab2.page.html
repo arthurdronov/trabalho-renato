@@ -1,17 +1,51 @@
 <ion-header [translucent]="true">
-  <ion-toolbar>
+  <ion-toolbar color="primary">
     <ion-title>
-      Tab 2
+      <ion-icon name="receipt-outline" style="vertical-align:middle; margin-right:6px;"></ion-icon>
+      Histórico
     </ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Tab 2</ion-title>
-    </ion-toolbar>
-  </ion-header>
 
-  <app-explore-container name="Tab 2 page"></app-explore-container>
+  <ion-refresher slot="fixed" (ionRefresh)="refresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <!-- Lista vazia -->
+  <div *ngIf="txs.length === 0" class="empty-state ion-text-center ion-padding">
+    <div style="font-size: 48px; margin-bottom: 12px;">📭</div>
+    <ion-text color="medium">
+      <p>Nenhuma transação ainda.<br>Faça sua primeira transferência!</p>
+    </ion-text>
+  </div>
+
+  <!-- Lista de transações -->
+  <ion-list *ngIf="txs.length > 0" lines="full">
+    <ion-item
+      *ngFor="let tx of txs"
+      (click)="goDetail(tx)"
+      button
+      detail>
+
+      <div slot="start" class="tx-icon" [class.out]="tx.type === 'out'" [class.in]="tx.type === 'in'">
+        <ion-icon
+          [name]="tx.type === 'out' ? 'arrow-up-outline' : 'arrow-down-outline'">
+        </ion-icon>
+      </div>
+
+      <ion-label>
+        <h3>{{ tx.type === 'out' ? 'Para ' : 'De ' }}{{ partnerName(tx) }}</h3>
+        <p>{{ fmtDate(tx.ts) }}</p>
+        <p *ngIf="tx.note" class="note-text">{{ tx.note }}</p>
+      </ion-label>
+
+      <ion-note slot="end" [color]="tx.type === 'out' ? 'danger' : 'success'" class="tx-amount">
+        {{ tx.type === 'out' ? '-' : '+' }}{{ fmtBRL(tx.amount) }}
+      </ion-note>
+
+    </ion-item>
+  </ion-list>
+
 </ion-content>

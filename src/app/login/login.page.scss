@@ -1,0 +1,29 @@
+.login-content {
+  --background: var(--ion-color-light);
+}
+
+.hero {
+  padding: 48px 16px 24px;
+
+  .hero-icon {
+    font-size: 56px;
+    margin-bottom: 12px;
+  }
+
+  h1 {
+    font-size: 26px;
+    font-weight: 600;
+    margin: 0 0 6px;
+  }
+
+  p {
+    color: var(--ion-color-medium);
+    font-size: 14px;
+    margin: 0;
+  }
+}
+
+ion-card {
+  margin: 0;
+  border-radius: 16px;
+}
