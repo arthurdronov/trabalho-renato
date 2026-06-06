@@ -5,8 +5,9 @@ export class WebauthnService {
 
   isSupported(): boolean {
     return !!(window.PublicKeyCredential &&
-      navigator.credentials?.create &&
-      navigator.credentials?.get);
+      navigator.credentials &&
+      typeof navigator.credentials.create === 'function' &&
+      typeof navigator.credentials.get === 'function');
   }
 
   async isBiometricAvailable(): Promise<boolean> {

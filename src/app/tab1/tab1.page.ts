@@ -6,7 +6,7 @@ import {
   IonHeader, IonToolbar, IonTitle, IonContent,
   IonCard, IonCardHeader, IonCardTitle, IonCardContent,
   IonButton, IonButtons, IonIcon, IonItem, IonLabel, IonInput,
-  IonSelect, IonSelectOption, IonText, IonSpinner,
+  IonSelect, IonSelectOption, IonSpinner,
   ToastController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
@@ -24,7 +24,7 @@ import { WebauthnService } from '../services/webauthn.service';
     IonHeader, IonToolbar, IonTitle, IonContent,
     IonCard, IonCardHeader, IonCardTitle, IonCardContent,
     IonButton, IonButtons, IonIcon, IonItem, IonLabel, IonInput,
-    IonSelect, IonSelectOption, IonText, IonSpinner
+    IonSelect, IonSelectOption, IonSpinner
   ]
 })
 export class Tab1Page {
